@@ -200,7 +200,7 @@ curl -H "Authorization: Bearer YOUR_TOKEN" http://pangolin:3001/v1/docs
 
 ---
 
-## �️ SafetyF Features
+## �️ Safety Features
 
 - 👀 **Read-only** access to Dokploy
 - 🔄 **Graceful retries** with exponential backoff
