@@ -1,0 +1,42 @@
+# Fallback compose file for systems without existing networks
+# Usage: docker compose -f docker-compose.yml -f docker-compose.fallback.yml up -d
+
+services:
+  dock-otter:
+    # Inherits from main docker-compose.yml
+    depends_on:
+      - dokploy-mock
+      - pangolin-mock
+
+  # Mock services for testing without real Dokploy/Pangolin
+  dokploy-mock:
+    image: nginx:alpine
+    container_name: dokploy-mock
+    ports:
+      - "3000:80"
+    volumes:
+      - ./test/dokploy-mock.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - dokploy-network
+
+  pangolin-mock:
+    image: nginx:alpine
+    container_name: pangolin-mock
+    ports:
+      - "3001:80"
+    volumes:
+      - ./test/pangolin-mock.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - pangolin
+
+# Create networks if they don't exist
+networks:
+  shared-proxy:
+    driver: bridge
+    name: ${SHARED_PROXY_NETWORK:-shared-proxy}
+  dokploy-network:
+    driver: bridge
+    name: ${DOKPLOY_NETWORK:-dokploy-network}
+  pangolin:
+    driver: bridge
+    name: ${PANGOLIN_NETWORK:-pangolin}

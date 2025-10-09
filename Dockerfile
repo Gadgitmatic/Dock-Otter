@@ -21,8 +21,10 @@ COPY . .
 ARG VERSION=dev
 ARG BUILD_TIME
 ARG GIT_COMMIT=unknown
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -ldflags="-w -s -extldflags '-static' \
     -X main.version=${VERSION} \
     -X main.buildTime=${BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)} \

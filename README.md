@@ -57,6 +57,17 @@ PANGOLIN_URL=http://pangolin:3001
 
 ### 🐳 Step 3: Deploy
 
+**Easy Setup (Recommended):**
+```bash
+# Auto-detects your environment and sets up everything
+chmod +x setup.sh
+./setup.sh
+
+# Windows users
+setup.bat
+```
+
+**Manual Setup:**
 ```bash
 # Build and start (modern Docker Compose)
 docker compose up -d --build
