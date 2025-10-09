@@ -28,8 +28,8 @@
 ssh user@your-vps-ip
 
 # Clone the repo
-git clone <this-repo-url>
-cd dock-otter
+git clone https://github.com/Gadgitmatic/Dock-Otter.git
+cd Dock-Otter
 ```
 
 ### 🔑 Step 2: Configure API Keys
