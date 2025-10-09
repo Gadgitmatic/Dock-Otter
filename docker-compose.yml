@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  dock-otter:
+    build: 
+      context: .
+      args:
+        VERSION: "1.0.0"
+        BUILD_TIME: "${BUILD_TIME:-}"
+        GIT_COMMIT: "${GIT_COMMIT:-unknown}"
+    container_name: dock-otter
+    restart: unless-stopped
+    environment:
+      - DOKPLOY_URL=http://dokploy:3000
+      - PANGOLIN_URL=http://pangolin:3001
+      - POLL_INTERVAL=30s
+      - RETRY_ATTEMPTS=3
+      - RETRY_DELAY=5s
+    networks:
+      - shared-proxy
+      - dokploy-network
+      - pangolin
+    # Optional: Mount logs directory
+    volumes:
+      - ./logs:/app/logs
+    # Health check is built into Dockerfile
+    labels:
+      - "com.docker.compose.project=dock-otter"
+      - "maintainer=dock-otter-team"
+
+# Use existing networks from your VPS setup
+networks:
+  shared-proxy:
+    external: true
+  dokploy-network:
+    external: true
+  pangolin:
+    external: true
