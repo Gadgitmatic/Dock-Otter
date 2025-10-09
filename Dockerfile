@@ -10,12 +10,12 @@ RUN adduser -D -s /bin/sh -u 1001 appuser
 
 WORKDIR /app
 
-# Copy go mod files first for better caching
+# Copy go mod and source code
 COPY go.mod ./
-RUN go mod download
-
-# Copy source code
 COPY . .
+
+# Download dependencies and generate go.sum
+RUN go mod tidy && go mod download
 
 # Build the binary with 2025 security best practices
 ARG VERSION=dev
