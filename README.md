@@ -58,11 +58,14 @@ PANGOLIN_URL=http://pangolin:3001
 ### 🐳 Step 3: Deploy
 
 ```bash
-# Build and start
+# Build and start (modern Docker Compose)
+docker compose up -d --build
+
+# Or if you have older docker-compose installed
 docker-compose up -d --build
 
 # Check logs
-docker-compose logs -f dock-otter
+docker compose logs -f dock-otter
 ```
 
 ### ✅ Step 4: Verify
@@ -139,7 +142,7 @@ proxy-resources:
 
 ```bash
 # 📋 View logs
-docker-compose logs -f dock-otter
+docker compose logs -f dock-otter
 
 # 🏥 Check version and health
 docker exec dock-otter /dock-otter --version
@@ -152,13 +155,13 @@ docker exec dock-otter sh -c "RUN_ONCE=true /dock-otter"
 docker exec dock-otter sh -c "RUN_ONCE=true FORCE_SYNC=true /dock-otter"
 
 # 🔄 Restart
-docker-compose restart dock-otter
+docker compose restart dock-otter
 
 # 🛑 Stop
-docker-compose down
+docker compose down
 
 # 🔄 Update
-git pull && docker-compose up -d --build
+git pull && docker compose up -d --build
 ```
 
 ---
@@ -183,7 +186,7 @@ docker network ls | grep -E "(shared-proxy|dokploy|pangolin)"
 
 ```bash
 # Verify API keys in logs (without exposing secrets)
-docker-compose logs dock-otter | grep "🔐"
+docker compose logs dock-otter | grep "🔐"
 
 # Test Dokploy API manually
 curl -H "X-API-Key: YOUR_KEY" http://dokploy:3000/api/project/all
