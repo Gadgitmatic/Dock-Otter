@@ -11,8 +11,8 @@ RUN adduser -D -s /bin/sh -u 1001 appuser
 WORKDIR /app
 
 # Copy go mod files first for better caching
-COPY go.mod go.sum ./
-RUN go mod download && go mod verify
+COPY go.mod ./
+RUN go mod download
 
 # Copy source code
 COPY . .
