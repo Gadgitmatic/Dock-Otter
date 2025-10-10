@@ -478,24 +478,43 @@ func (d *DockOtter) resolveTargetPort(app DokployApp, domain DokployDomain) int 
 }
 
 func (d *DockOtter) getDokployProjects() ([]DokployProject, error) {
-	resp, err := d.dokployClient.R().
-		SetHeader("Accept", "application/json").
-		Get(d.config.DokployURL + "/api/project/all")
+	// Try multiple endpoints for different Dokploy versions
+	endpoints := []string{
+		"/api/projects",
+		"/api/project/all", 
+		"/api/project",
+		"/api/applications",
+	}
+	
+	var lastErr error
+	for _, endpoint := range endpoints {
+		resp, err := d.dokployClient.R().
+			SetHeader("Accept", "application/json").
+			Get(d.config.DokployURL + endpoint)
+		
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		
+		if resp.StatusCode() == 200 {
+			var projects []DokployProject
+			if err := json.Unmarshal(resp.Body(), &projects); err != nil {
+				lastErr = err
+				continue
+			}
+			slog.Info("✅ Found working Dokploy endpoint", "endpoint", endpoint)
+			return projects, nil
+		}
+		
+		lastErr = fmt.Errorf("endpoint %s returned status %d", endpoint, resp.StatusCode())
+	}
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch projects: %w", err)
 	}
 
-	if resp.StatusCode() != 200 {
-		return nil, fmt.Errorf("dokploy API returned status %d: %s", resp.StatusCode(), resp.String())
-	}
-
-	var projects []DokployProject
-	if err := json.Unmarshal(resp.Body(), &projects); err != nil {
-		return nil, fmt.Errorf("failed to parse projects response: %w", err)
-	}
-
-	return projects, nil
+	return nil, fmt.Errorf("all endpoints failed, last error: %w", lastErr)
 }
 
 func (d *DockOtter) createBlueprintWithRetry(blueprint *PangolinBlueprint) error {
