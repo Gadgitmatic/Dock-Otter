@@ -1,0 +1,38 @@
+# Environment files with sensitive data
+.env
+.env.local
+.env.production
+
+# Go build artifacts
+dock-otter
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+data/
+logs/
+
+# Temporary files
+*.tmp
+*.temp

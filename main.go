@@ -321,18 +321,20 @@ func (d *DockOtter) syncApps() error {
 	errors := 0
 
 	for _, project := range projects {
-		slog.Debug("Processing project", "project", project.Name, "id", project.ProjectID)
+		slog.Info("📁 Processing project", "project", project.Name, "id", project.ProjectID, "apps", len(project.Applications), "compose", len(project.Compose))
 		
 		// Process regular applications
 		for _, app := range project.Applications {
+			slog.Info("🔍 Found app", "app", app.Name, "status", app.Status, "domains", len(app.Domains), "port", app.Port)
+			
 			if app.Status != "done" {
-				slog.Debug("Skipping app - not running", "app", app.Name, "status", app.Status)
+				slog.Info("⏭️  Skipping app - not running", "app", app.Name, "status", app.Status)
 				skipped++
 				continue
 			}
 
 			if len(app.Domains) == 0 {
-				slog.Debug("Skipping app - no domains", "app", app.Name)
+				slog.Info("⏭️  Skipping app - no domains", "app", app.Name)
 				skipped++
 				continue
 			}
@@ -352,14 +354,16 @@ func (d *DockOtter) syncApps() error {
 
 		// Process compose applications
 		for _, app := range project.Compose {
+			slog.Info("🔍 Found compose", "compose", app.Name, "status", app.Status, "domains", len(app.Domains), "port", app.Port)
+			
 			if app.Status != "done" {
-				slog.Debug("Skipping compose - not running", "compose", app.Name, "status", app.Status)
+				slog.Info("⏭️  Skipping compose - not running", "compose", app.Name, "status", app.Status)
 				skipped++
 				continue
 			}
 
 			if len(app.Domains) == 0 {
-				slog.Debug("Skipping compose - no domains", "compose", app.Name)
+				slog.Info("⏭️  Skipping compose - no domains", "compose", app.Name)
 				skipped++
 				continue
 			}
