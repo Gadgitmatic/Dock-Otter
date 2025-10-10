@@ -510,10 +510,6 @@ func (d *DockOtter) getDokployProjects() ([]DokployProject, error) {
 		lastErr = fmt.Errorf("endpoint %s returned status %d", endpoint, resp.StatusCode())
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch projects: %w", err)
-	}
-
 	return nil, fmt.Errorf("all endpoints failed, last error: %w", lastErr)
 }
 
