@@ -18,25 +18,6 @@ COPY . .
 RUN go mod tidy && go mod download
 
 # Build the binary with 2025 security best practices
-ARG VERSION=dev
-ARG BUILD_TIME
-ARG GIT_COMMIT=unknown
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
-
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
-    -ldflags="-w -s -extldflags '-static' \
-    -X main.version=${VERSION} \
-    -X main.buildTime=${BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)} \
-    -X main.gitCommit=${GIT_COMMIT}" \
-    -a -installsuffix cgo \
-    -trimpath \
-    -o dock-otter .
-
-# Final stage - distroless for security
-FROM gcr.io/distroless/static-debian12:nonroot
-
-# Copy CA certificates and timezone data
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 
