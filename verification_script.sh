@@ -19,37 +19,40 @@ else
     exit 1
 fi
 
-# 3. Check Internal Connectivity
-echo "🔍 Checking internal network connectivity..."
+# 3. Check Connectivity via Logs (Container is minimal, no wget/curl)
+echo "🔍 Checking connectivity via logs..."
 
-echo -n "   • Dokploy (http://dokploy:3000)... "
-if docker exec dock-otter wget -q --spider http://dokploy:3000/api/project/all 2>/dev/null; then
-    echo "✅ Connected"
+# Check for startup connection success
+if docker compose logs dock-otter | grep -q "✅ Dokploy connected"; then
+    echo "✅ Dokploy connection confirmed in logs:"
+    docker compose logs dock-otter | grep "✅ Dokploy connected" | tail -n 1
 else
-    echo "❌ Failed"
+    echo "⚠️  No 'Dokploy connected' log found. Checking for errors..."
+    docker compose logs dock-otter | grep "Dokploy connection failed" | tail -n 1
 fi
 
-echo -n "   • Pangolin (http://pangolin:3001)... "
-if docker exec dock-otter wget -q --spider http://pangolin:3001/v1/docs 2>/dev/null; then
-    echo "✅ Connected"
+# Check for Pangolin connection
+if docker compose logs dock-otter | grep -q "✅ Pangolin API accessible"; then
+    echo "✅ Pangolin connection confirmed in logs"
 else
-    echo "❌ Failed"
+    echo "⚠️  No 'Pangolin API accessible' log found."
 fi
 
-# 4. Check Logs for Sync Status
-echo -e "\n📋 Checking recent logs for sync activity..."
-LOGS=$(docker compose logs --tail=50 dock-otter)
+# 4. Analyze Sync Logic
+echo -e "\n📋 Analyzing Sync Behavior..."
+LOGS=$(docker compose logs --tail=100 dock-otter)
 
-if echo "$LOGS" | grep -q "✅ Sync completed"; then
-    echo "✅ Found successful sync logs"
-    # Extract stats
-    echo "$LOGS" | grep "✅ Sync completed" | tail -n 1
-elif echo "$LOGS" | grep -q "❌"; then
-    echo "⚠️  Found errors in logs:"
-    echo "$LOGS" | grep "❌" | tail -n 3
-else
-    echo "ℹ️  No sync completion logs found recently. Current logs:"
-    echo "$LOGS" | tail -n 5
+# Check what it's finding
+echo "--- Recent Activity ---"
+echo "$LOGS" | grep -E "Found app|Skipping|Processing project|Sync completed" | tail -n 10
+
+if echo "$LOGS" | grep -q "processed=0 skipped=0"; then
+    echo -e "\n⚠️  WARNING: Sync completed but processed 0 apps."
+    echo "   Possible reasons:"
+    echo "   1. No apps are running (Status must be 'done')"
+    echo "   2. Apps have no domains configured"
+    echo "   3. API key has insufficient permissions"
+    echo "   4. Dokploy API is returning empty lists"
 fi
 
 echo -e "\n================================"
