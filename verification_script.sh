@@ -55,5 +55,41 @@ if echo "$LOGS" | grep -q "processed=0 skipped=0"; then
     echo "   4. Dokploy API is returning empty lists"
 fi
 
+# 5. Debug API Response (Run on Host)
+echo -e "\n🔍 Debugging Dokploy API Response (Host-side)..."
+if [ -f .env ]; then
+    set -a
+    source .env
+    set +a
+    
+    if [ -z "$DOKPLOY_API_KEY" ] && [ -z "$DOKPLOY_TOKEN" ]; then
+        echo "❌ No API Key or Token found in .env"
+    else
+        echo "🔑 Found credentials in .env"
+        echo "📡 Testing /api/project/all..."
+        
+        # Construct header
+        HEADER="Authorization: Bearer $DOKPLOY_TOKEN"
+        if [ -n "$DOKPLOY_API_KEY" ]; then
+            HEADER="X-API-Key: $DOKPLOY_API_KEY"
+        fi
+        
+        # Curl and show first 1000 chars of structure
+        RESPONSE=$(curl -s -H "$HEADER" "$DOKPLOY_URL/api/project/all")
+        if [ -n "$RESPONSE" ]; then
+            echo "📄 Raw JSON (truncated):"
+            echo "$RESPONSE" | cut -c 1-1000
+            echo "..."
+        else
+            echo "❌ No response from API"
+            echo "   Trying /api/projects..."
+             RESPONSE=$(curl -s -H "$HEADER" "$DOKPLOY_URL/api/projects")
+             echo "$RESPONSE" | cut -c 1-1000
+        fi
+    fi
+else
+    echo "⚠️  .env file not found, cannot debug API"
+fi
+
 echo -e "\n================================"
 echo "Verification Complete"
