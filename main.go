@@ -72,7 +72,7 @@ type DokployDomain struct {
 
 // Pangolin Blueprint types (simplified for our use case)
 type PangolinBlueprint struct {
-	ProxyResources []ProxyResource `yaml:"proxy-resources"`
+	ProxyResources map[string]ProxyResource `yaml:"proxy-resources"`
 }
 
 type ProxyResource struct {
@@ -97,7 +97,7 @@ type DockOtter struct {
 	config        *Config
 	dokployClient *resty.Client
 	pangolinClient *resty.Client
-	processedApps map[string]bool
+	// processedApps map[string]bool // Removed to allow updates
 }
 
 func main() {
@@ -210,7 +210,7 @@ func NewDockOtter(cfg *Config) *DockOtter {
 		config:         cfg,
 		dokployClient:  dokployClient,
 		pangolinClient: pangolinClient,
-		processedApps:  make(map[string]bool),
+		// processedApps:  make(map[string]bool),
 	}
 }
 
@@ -392,10 +392,10 @@ func (d *DockOtter) syncApps() error {
 func (d *DockOtter) processAppDomain(app DokployApp, domain DokployDomain) error {
 	resourceName := d.generateResourceName(app.Name, domain.Host)
 
-	// Check if already processed (unless force sync is enabled)
-	if !d.config.ForceSync && d.processedApps[resourceName] {
-		return nil
-	}
+	// Always sync to ensure state is correct (Pangolin should handle idempotency)
+	// if !d.config.ForceSync && d.processedApps[resourceName] {
+	// 	return nil
+	// }
 
 	// Validate required fields
 	if domain.Host == "" {
@@ -409,12 +409,16 @@ func (d *DockOtter) processAppDomain(app DokployApp, domain DokployDomain) error
 	}
 
 	// Determine target method and hostname with better logic
-	targetMethod := "http"
+	targetMethod := "http" // Default to HTTP for internal container communication
 	targetHostname := app.AppName
-	
-	if domain.HTTPS {
-		targetMethod = "https"
+	if targetHostname == "" {
+		targetHostname = app.Name // Fallback if AppName is empty
 	}
+	
+	// Only use HTTPS for target if explicitly needed (rare for internal containers)
+	// if domain.HTTPS {
+	// 	targetMethod = "https"
+	// }
 
 	// Handle path-based routing if specified
 	targetPath := "/"
@@ -432,9 +436,10 @@ func (d *DockOtter) processAppDomain(app DokployApp, domain DokployDomain) error
 		"ssl", domain.HTTPS)
 
 	// Create enhanced Pangolin blueprint with better domain/port mapping
+	// Using Map structure as per Pangolin API docs
 	blueprint := &PangolinBlueprint{
-		ProxyResources: []ProxyResource{
-			{
+		ProxyResources: map[string]ProxyResource{
+			resourceName: {
 				Name:       resourceName,
 				Protocol:   "http",
 				FullDomain: domain.Host,
@@ -457,7 +462,7 @@ func (d *DockOtter) processAppDomain(app DokployApp, domain DokployDomain) error
 		return fmt.Errorf("failed to create blueprint: %w", err)
 	}
 
-	d.processedApps[resourceName] = true
+	// d.processedApps[resourceName] = true
 	slog.Info("✅ Pangolin resource created", "resource", resourceName, "domain", domain.Host)
 	return nil
 }
@@ -475,9 +480,8 @@ func (d *DockOtter) resolveTargetPort(app DokployApp, domain DokployDomain) int 
 	}
 
 	// Priority 3: Default ports based on protocol
-	if domain.HTTPS {
-		return 443
-	}
+	// Default to 80 for internal container traffic, even if public is HTTPS
+	// The proxy handles SSL termination.
 	return 80
 }
 
