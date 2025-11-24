@@ -35,35 +35,6 @@ type Config struct {
 	PangolinToken    string
 	PollInterval     time.Duration
 	RetryAttempts    int
-	RetryDelay       time.Duration
-	RunOnce          bool // For manual execution
-	ForceSync        bool // Force re-sync existing resources
-}
-
-// Dokploy API types (based on actual API structure)
-type DokployProject struct {
-	ProjectID    string          `json:"projectId"`
-	Name         string          `json:"name"`
-	Description  string          `json:"description"`
-	Applications []DokployApp    `json:"applications"`
-	Compose      []DokployApp    `json:"compose"`
-}
-
-type DokployApp struct {
-	ApplicationID string `json:"applicationId,omitempty"`
-	ComposeID     string `json:"composeId,omitempty"`
-	Name          string `json:"name"`
-	AppName       string `json:"appName"`
-	Description   string `json:"description"`
-	Domains       []DokployDomain `json:"domains,omitempty"`
-	Port          int    `json:"port,omitempty"`
-	Status        string `json:"applicationStatus"`
-	ProjectID     string `json:"projectId"`
-}
-
-type DokployDomain struct {
-	DomainID    string `json:"domainId"`
-	Host        string `json:"host"`
 	Path        string `json:"path"`
 	Port        int    `json:"port"`
 	HTTPS       bool   `json:"https"`
@@ -277,25 +248,6 @@ func (d *DockOtter) testConnectivity() error {
 	projects, err := d.getDokployProjects()
 	if err != nil {
 		slog.Error("❌ Dokploy connection failed", "error", err)
-		return err
-	}
-	
-	totalApps := 0
-	totalDomains := 0
-	for _, project := range projects {
-		for _, app := range project.Applications {
-			totalApps++
-			totalDomains += len(app.Domains)
-		}
-		for _, app := range project.Compose {
-			totalApps++
-			totalDomains += len(app.Domains)
-		}
-	}
-	slog.Info("✅ Dokploy connected", 
-		"projects", len(projects), 
-		"apps", totalApps, 
-		"domains", totalDomains)
 
 	// Test Pangolin - simple connectivity check
 	resp, err := d.pangolinClient.R().Get(d.config.PangolinURL + "/v1/docs")
@@ -315,76 +267,6 @@ func (d *DockOtter) syncApps() error {
 	if err != nil {
 		return fmt.Errorf("failed to get projects: %w", err)
 	}
-
-	processed := 0
-	skipped := 0
-	errors := 0
-
-	for _, project := range projects {
-		slog.Info("📁 Processing project", "project", project.Name, "id", project.ProjectID, "apps", len(project.Applications), "compose", len(project.Compose))
-		
-		// Process regular applications
-		for _, app := range project.Applications {
-			slog.Info("🔍 Found app", "app", app.Name, "status", app.Status, "domains", len(app.Domains), "port", app.Port)
-			
-			if app.Status != "done" {
-				slog.Info("⏭️  Skipping app - not running", "app", app.Name, "status", app.Status)
-				skipped++
-				continue
-			}
-
-			if len(app.Domains) == 0 {
-				slog.Info("⏭️  Skipping app - no domains", "app", app.Name)
-				skipped++
-				continue
-			}
-
-			for _, domain := range app.Domains {
-				if err := d.processAppDomain(app, domain); err != nil {
-					slog.Error("❌ Failed to process app domain", 
-						"app", app.Name, 
-						"domain", domain.Host, 
-						"error", err)
-					errors++
-				} else {
-					processed++
-				}
-			}
-		}
-
-		// Process compose applications
-		for _, app := range project.Compose {
-			slog.Info("🔍 Found compose", "compose", app.Name, "status", app.Status, "domains", len(app.Domains), "port", app.Port)
-			
-			if app.Status != "done" {
-				slog.Info("⏭️  Skipping compose - not running", "compose", app.Name, "status", app.Status)
-				skipped++
-				continue
-			}
-
-			if len(app.Domains) == 0 {
-				slog.Info("⏭️  Skipping compose - no domains", "compose", app.Name)
-				skipped++
-				continue
-			}
-
-			for _, domain := range app.Domains {
-				if err := d.processAppDomain(app, domain); err != nil {
-					slog.Error("❌ Failed to process compose domain", 
-						"compose", app.Name, 
-						"domain", domain.Host, 
-						"error", err)
-					errors++
-				} else {
-					processed++
-				}
-			}
-		}
-	}
-
-	slog.Info("✅ Sync completed", 
-		"processed", processed, 
-		"skipped", skipped, 
 		"errors", errors)
 	return nil
 }
