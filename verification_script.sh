@@ -74,16 +74,20 @@ if [ -f .env ]; then
             HEADER="X-API-Key: $DOKPLOY_API_KEY"
         fi
         
+        # Adjust URL for host access (replace dokploy container name with localhost)
+        HOST_URL="${DOKPLOY_URL//dokploy/localhost}"
+        echo "   (Using $HOST_URL for host-side check)"
+
         # Curl and show first 1000 chars of structure
-        RESPONSE=$(curl -s -H "$HEADER" "$DOKPLOY_URL/api/project/all")
+        RESPONSE=$(curl -s -H "$HEADER" "$HOST_URL/api/project/all")
         if [ -n "$RESPONSE" ]; then
             echo "📄 Raw JSON (truncated):"
             echo "$RESPONSE" | cut -c 1-1000
             echo "..."
         else
-            echo "❌ No response from API"
+            echo "❌ No response from API at $HOST_URL"
             echo "   Trying /api/projects..."
-             RESPONSE=$(curl -s -H "$HEADER" "$DOKPLOY_URL/api/projects")
+             RESPONSE=$(curl -s -H "$HEADER" "$HOST_URL/api/projects")
              echo "$RESPONSE" | cut -c 1-1000
         fi
     fi
